@@ -1,0 +1,33 @@
+#initialization
+units metal
+boundary p p p
+atom_style full
+pair_style vashishta
+neighbor 1.0 bin
+neigh_modify delay 1
+
+#sytem definition 
+read_data dataSiO.data
+replicate 4 4 4
+
+#Simulation setting
+pair_coeff * * SiO.1990.vashishta Si O
+dump dmp all atom 5000 dump.lammpstrj
+
+#annealing/ 6000K으로 시작해서 100atm에서 4000K으로 냉각
+#그다음에 압력 낮추면서 1atm 300K상태로 보내는 코드
+#run
+velocity all create 6000 492856 rot yes dist gaussian   
+fix nvt1 all nvt temp 6000 6000 0.1
+timestep 0.001
+thermo 1000
+run 5000
+unfix nvt1
+fix  npt1 all npt temp 6000 4000 0.1 aniso 100 1 1
+run 5000
+fix npt1 all npt temp 4000 300 0.1 aniso 100 1 1
+run 200000
+fix npt1 all npt temp 300 300 0.1 aniso 1 1 1
+run 4000
+write_data data.amorphousSiO
+

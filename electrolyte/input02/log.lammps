@@ -1,0 +1,209 @@
+LAMMPS (29 Sep 2021 - Update 2)
+# Initialisation
+units real
+# mass = g/mol , distance = A, energy= Kcal/mol
+atom_style full
+# atom mass+charge
+bond_style harmonic
+angle_style harmonic
+#harmonic은 potential을 부여한 상태
+pair_style lj/cut/tip4p/long 1 2 1 1 0.1546 12.0
+#lj (Lennard-Jones potential) / tip4p = atoms interact LJ potential, coulombic interaction
+# LJ potential은 cut off 거리보다 작을때만 상호작용 계산/ Columbic 은 멀리있는 원자와의 상호작용 계산
+
+kspace_style pppm/tip4p 1.0e-4
+#pppm은 particle-particle, particle-mesh interaction 표현
+# short range은 particle-particle로 풀고 / long range는 poisson's equation으로 풀어서 나타냄
+#-----system definition
+lattice fcc 4.04
+Lattice spacing in x,y,z = 4.0400000 4.0400000 4.0400000
+# 4.04는 scale factor 따라서 박스 설정하게 되면 거리는  -20.2~20.2A으로 설정됨
+region box block -5 5 -5 5 -13 13
+create_box 6 box            bond/types 1            angle/types 1            extra/bond/per/atom 2            extra/angle/per/atom 1            extra/special/per/atom 2
+Created orthogonal box = (-20.200000 -20.200000 -52.520000) to (20.200000 20.200000 52.520000)
+  1 by 1 by 1 MPI processor grid
+
+#----- create the walls
+region rtopwall block -5 5 -5 5 -12 -10
+region rbotwall block -5 5 -5 5 10 12
+
+create_atoms 5 region rtopwall
+Created 1000 atoms
+  using lattice units in orthogonal box = (-20.200000 -20.200000 -52.520000) to (20.200000 20.200000 52.520000)
+  create_atoms CPU = 0.002 seconds
+create_atoms 6 region rbotwall
+Created 1000 atoms
+  using lattice units in orthogonal box = (-20.200000 -20.200000 -52.520000) to (20.200000 20.200000 52.520000)
+  create_atoms CPU = 0.001 seconds
+
+#create the fluid
+region rliquid block -5 5 -5 5 -9 9
+lattice sc 4.04
+Lattice spacing in x,y,z = 4.0400000 4.0400000 4.0400000
+molecule h2omol water.txt
+Read molecule template h2omol:
+  1 molecules
+  0 fragments
+  3 atoms with max type 2
+  2 bonds with max type 1
+  1 angles with max type 1
+  0 dihedrals with max type 0
+  0 impropers with max type 0
+create_atoms 0 region rliquid mol h2omol 487596
+Created 5700 atoms
+  using lattice units in orthogonal box = (-20.200000 -20.200000 -52.520000) to (20.200000 20.200000 52.520000)
+  create_atoms CPU = 0.002 seconds
+
+fix mydep1 all deposit 10 3 1 56513 region rliquid near 0.3
+fix mydep2 all deposit 10 4 1 56514 region rliquid near 0.3
+# mydep은 fix를 정의해준 이름  / fix deposit 10 은 10step마다 random하게 ion 1개를 추가
+
+#-----setting
+include PARM.lammps
+mass 		1 15.9994
+mass 		2 1.008
+mass		3 28.990
+mass		4 35.453
+mass		5 26.9815
+mass		6 26.9815
+
+pair_coeff 	1 1 0.185199 3.1589
+pair_coeff 	2 2 0.0 0.0
+pair_coeff	3 3 0.04690 2.4299
+pair_coeff	4 4 0.1500 4.04470
+pair_coeff	5 5 11.697 2.574
+pair_coeff	6 6 11.697 2.574
+
+bond_coeff 	1 0 0.9572
+
+angle_coeff 	1 0 104.52
+group gH2O type 1 2
+5700 atoms in group gH2O
+group gNA type 3
+0 atoms in group gNA
+group gCl type 4
+0 atoms in group gCl
+group gliquid type 1 2 3 4
+5700 atoms in group gliquid
+group gtopwall type 5
+1000 atoms in group gtopwall
+group gbotwall type 6
+1000 atoms in group gbotwall
+group gwall type 5 6
+2000 atoms in group gwall
+neigh_modify exclude group gwall gwall
+
+dump mydmp all atom 1000 dump.02.lammpstrj
+
+#-----run
+#-----walls
+fix mysf1 gtopwall setforce 0 0 NULL
+fix mysf2 gbotwall setforce 0 0 NULL
+fix myaf1 gtopwall aveforce NULL NULL 0
+fix myaf2 gbotwall aveforce NULL NULL 0
+
+fix mynve all nve
+compute tliq gliquid temp
+fix myber gliquid temp/berendsen 1 1 1
+fix_modify myber temp tliq
+
+fix  myshk gH2O shake 1.0e-4 200 0 b 1 a 1
+       0 = # of size 2 clusters
+       0 = # of size 3 clusters
+       0 = # of size 4 clusters
+    1900 = # of frozen angles
+  find clusters CPU = 0.002 seconds
+fix  myrct all recenter NULL NULL INIT
+
+timestep 0.1
+thermo 500
+run 5000
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb (../kspace.cpp:340)
+  G vector (1/distance) = 0.21535815
+  grid = 18 18 36
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.033114229
+  estimated relative force accuracy = 9.9722517e-05
+  using double precision KISS FFT
+  3d grid and FFT values/proc = 25625 11664
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (../neighbor.cpp:627)
+Neighbor list info ...
+  update every 1 steps, delay 10 steps, check yes
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 14.3092
+  ghost atom cutoff = 14.3092
+  binsize = 7.1546, bins = 6 6 15
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair lj/cut/tip4p/long, perpetual
+      attributes: half, newton on
+      pair build: half/bin/newton
+      stencil: half/bin/3d
+      bin: standard
+Per MPI rank memory allocation (min/avg/max) = 26.59 | 26.59 | 26.59 Mbytes
+Step Temp E_pair E_mol TotEng Press 
+       0            0   -2305.0022            0   -2305.0022   -1358.9848 
+     500    161.74713   -3628.4474            0   -832.53217   -767.41693 
+    1000    81.821066   -5096.9903            0   -3682.6545   -1874.4335 
+    1500    39.159267   -6328.7259            0   -5651.8299   -2863.8155 
+    2000    28.978879   -7074.2436            0   -6573.3229   -3197.3336 
+    2500     28.40048    -7765.781            0   -7274.8583   -3645.1876 
+    3000    20.301809   -8233.4853            0    -7882.554     -3920.69 
+    3500    21.446643     -8675.05            0   -8304.3294   -4167.5264 
+    4000    19.331548   -9045.5605            0   -8711.4008    -4384.491 
+    4500    22.534308   -9410.8365            0   -9021.3148   -4552.0171 
+    5000    25.276248   -9746.9776            0   -9310.0595   -4660.1057 
+Loop time of 338.254 on 1 procs for 5000 steps with 7720 atoms
+
+Performance: 0.128 ns/day, 187.919 hours/ns, 14.782 timesteps/s
+100.1% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 278.29     | 278.29     | 278.29     |   0.0 | 82.27
+Bond    | 0.0010273  | 0.0010273  | 0.0010273  |   0.0 |  0.00
+Kspace  | 45.407     | 45.407     | 45.407     |   0.0 | 13.42
+Neigh   | 9.6178     | 9.6178     | 9.6178     |   0.0 |  2.84
+Comm    | 0.821      | 0.821      | 0.821      |   0.0 |  0.24
+Output  | 0.042017   | 0.042017   | 0.042017   |   0.0 |  0.01
+Modify  | 3.7273     | 3.7273     | 3.7273     |   0.0 |  1.10
+Other   |            | 0.3496     |            |       |  0.10
+
+Nlocal:        7720.00 ave        7720 max        7720 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:        21070.0 ave       21070 max       21070 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:    1.75293e+06 ave 1.75293e+06 max 1.75293e+06 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 1752928
+Ave neighs/atom = 227.06321
+Ave special neighs/atom = 1.4766839
+Neighbor list builds = 63
+Dangerous builds = 6
+write_data data.0.2.lammps
+System init for write_data ...
+PPPM initialization ...
+  extracting TIP4P info from pair style
+  using 12-bit tables for long-range coulomb (../kspace.cpp:340)
+  G vector (1/distance) = 0.21535811
+  grid = 18 18 36
+  stencil order = 5
+  estimated absolute RMS force accuracy = 0.033071327
+  estimated relative force accuracy = 9.9593319e-05
+  using double precision KISS FFT
+  3d grid and FFT values/proc = 25625 11664
+WARNING: Neighbor exclusions used with KSpace solver may give inconsistent Coulombic energies (../neighbor.cpp:627)
+
+set type 3 charge 1.0
+Setting atom values ...
+  10 settings made for charge
+set type 4 charge -1.0
+Setting atom values ...
+  10 settings made for charge
+
+
+
+Total wall time: 0:05:38

@@ -1,0 +1,34 @@
+#-----initialization
+units lj
+dimension 3
+atom_style atomic 
+pair_style lj/cut 2.5
+boundary p p p
+
+#-----system definition
+region mybox block -30 30 -30 30 -30 30
+create_box 2 mybox
+region mysphere sphere 0.0 0.0 0.0 5 side in
+# region  정의 / mycylinderin으로 정의하고 / cylinder모양 / z
+create_atoms 1 random 100 884956 mysphere
+create_atoms 2 random 100 178452 mysphere
+# create_atoms 원소 / 배치 / 갯수 / 변수 / 위치
+
+#-----simulation setting
+mass 1 1
+mass 2 1
+pair_coeff 1 1 1.0 1.0
+pair_coeff 2 2 0.5 3.0
+neigh_modify every 1 delay 5 check yes
+dump mydum all atom 10 dump.lammpstrj
+
+#-----run
+thermo 10
+minimize 1.0e-4 1.0e-6 1000 10000
+ 
+#-----simulation 
+fix mynve all nve
+fix mylgv all langevin 1.0 1.0 0.1 157489
+timestep 0.005
+thermo 1000
+run 10000

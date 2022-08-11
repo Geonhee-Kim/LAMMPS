@@ -1,0 +1,59 @@
+#-----initialization
+units lj #단위 설정 real, metal, SI etc..
+#3D에선  real, metal 등 쓰고 2D에선 lj사용 
+dimension 3 #Simulation 차원 설정
+atom_style atomic 
+#full = mass+charge
+pair_style lj/cut 2.5 # lj unit사용하고 2.5일때
+#lj (Lennard-Jones potential) / tip4p = atoms interact LJ potential, coulombic interaction
+# LJ potential은 cut off 거리보다 작을때만 상호작용 계산/ Columbic 은 멀리있는 원자와의 상호작용 계산
+bond_style harmonic 
+#harmonic은 potential을 부여한 상태
+
+#args = any number of values
+
+ksapce_style pppm/tip4p 1.0e-4
+#pppm은 particle-particle, particle-mesh interaction 표현
+# short range은 particle-particle로 풀고 / long range는 poisson's equation으로 풀어서 나타냄
+
+
+#-----system definition
+lattice fcc 4.04
+# 4.04는 scale factor 따라서 박스 설정하게 되면 거리는  -20.2~20.2A으로 설정됨
+region mybox block -30 30 -30 30 -30 30
+#Simulation box size = (0 0 0) to (45.8 45.8 45.8)
+create_box 2 mybox
+#1은 박스에 들어갈 원소의 갯수, myrgion은 윗줄에서 정의한 box name
+region mysphere sphere 0.0 0.0 0.0 5 side in
+# region  정의 / mycylinderin으로 정의하고 / cylinder모양 / z
+#side in = inside the cylinder 
+#side out = evertything that is not inside the cylinder 
+
+create_atoms 1 random 100 884956 mysphere
+create_atoms 2 random 100 178452 mysphere
+# create_atoms 원소 / 배치 / 갯수 / 변수 / 위치
+# Fill the box with atom, 1종류 원소를 region(myregion)에 채운다
+#여기까지 박스만들고 원소채운 상태
+
+#-----simulation setting
+mass 1 1
+mass 2 1
+pair_coeff 1 1 1.0 1.0
+pair_coeff 2 2 0.5 3.0
+neigh_modify every 1 delay 5 check yes
+dump mydum all atom 10 dump.lammpstrj
+
+#-----run
+thermo 10
+minimize 1.0e-4 1.0e-6 1000 10000
+# tolerance / atom간 maximum force / max iteration / energy,force calculation
+write_data data.min.lammps
+# write_data 명령어로 나중에 simulation restart가능.(Optimization 한 data로 다른 계산 가능)
+# data.min.lammps는 atom number/ kind of atom / x / y / z / vx / vy / vz로 표현됨
+
+#-----simulation 
+fix mynve all nve
+fix mylgv all langevin 1.0 1.0 0.1 157489
+timestep 0.005
+thermo 1000
+run 10000

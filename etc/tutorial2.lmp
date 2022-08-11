@@ -1,0 +1,54 @@
+
+#-----Create a simulation Box (initialization)
+dimension 2   #Simulation 차원 설정
+units lj #단위 설정 real, metal, SI etc..
+#3D에선  real, metal 등 쓰고 2D에선 lj사용 
+boundary p p p #boundary 설정 p,s,f,m
+atom_style atomic
+pair_style lj/cut 2.5 # lj unit사용하고 2.5일때  
+
+#args = any number of values
+
+#-----system definition 
+region myregion block -30 30 -30 30 -0.5 0.5
+#Simulation box size = (0 0 0) to (45.8 45.8 45.8)
+create_box 2 myregion 
+#1은 박스에 들어갈 원소의 갯수, myrgion은 윗줄에서 정의한 box name
+region mycylin cylinder z 0 0 15 INF INF side in 
+#side in = inside the cylinder 
+region mycylou cylinder z 0 0 15 INF INF side out
+#side out = evertything that is not inside the cylinder 
+
+create_atoms 1 random 1500 341341 mycylin 
+create_atoms 2 random 100 127569 mycylou
+# Fill the box with atom, 1종류 원소를 region(myregion)에 채운다
+#여기까지 박스만들고 원소채운 상태
+
+#-----simulation settings
+mass 1 1
+mass 2 1
+pair_coeff 1 1 1.0 1.0
+pair_coeff 2 2 0.5 0.3
+neigh_modify every 1 delay 5 check yes
+dump mydump all atom 10 dump.lammpstrj
+
+#-----Run
+thermo 10
+minimize 1.0e-4 1.0e-6 1000 10000
+# tolerance / atom간 maximum force / max iteration / energy,force calculation
+write_data data.min.lammps
+# write_data 명령어로 나중에 simulation restart가능.(Optimization 한 data로 다른 계산 가능)
+# data.min.lammps는 atom number/ kind of atom / x / y / z / vx / vy / vz로 표현됨
+
+#-----calculation
+fix mynve all nve
+fix mylgv all langevin 1.0 1.0 0.1 587486
+fix myefn all enforce2d
+timestep 0.005
+thermo 1000
+run 10000
+
+
+
+
+

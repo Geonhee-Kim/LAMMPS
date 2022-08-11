@@ -1,0 +1,61 @@
+data_LiOH
+_audit_creation_date              2022-08-04
+_audit_creation_method            'Materials Studio'
+_symmetry_space_group_name_H-M    'P4/NMM'
+_symmetry_Int_Tables_number       129
+_symmetry_cell_setting            tetragonal
+loop_
+_symmetry_equiv_pos_as_xyz
+  x,y,z
+  -x,-y,z
+  -y+1/2,x+1/2,z
+  y+1/2,-x+1/2,z
+  -x+1/2,y+1/2,-z
+  x+1/2,-y+1/2,-z
+  y,x,-z
+  -y,-x,-z
+  -x+1/2,-y+1/2,-z
+  x+1/2,y+1/2,-z
+  y,-x,-z
+  -y,x,-z
+  x,-y,z
+  -x,y,z
+  -y+1/2,-x+1/2,z
+  y+1/2,x+1/2,z
+_cell_length_a                    3.1963
+_cell_length_b                    3.1963
+_cell_length_c                    3.9162
+_cell_angle_alpha                 90.0000
+_cell_angle_beta                  90.0000
+_cell_angle_gamma                 90.0000
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+_atom_site_adp_type
+_atom_site_occupancy
+Li0    Li    0.50000   0.50000   0.00000   0.00000  Uiso   1.00
+H2     H     0.50000  -0.00000   0.51980   0.00000  Uiso   1.00
+O4     O     0.00000   0.50000   0.23671   0.00000  Uiso   1.00
+loop_
+_geom_bond_atom_site_label_1
+_geom_bond_atom_site_label_2
+_geom_bond_distance
+_geom_bond_site_symmetry_2
+_ccdc_geom_bond_type
+Li0    O4      1.848   .     S
+Li0    O4      1.848   1_655 S
+Li0    O4      1.848   5_545 S
+Li0    O4      1.848   5     S
+Li0    Li0     2.260   3_545 S
+Li0    Li0     2.260   3_655 S
+Li0    Li0     2.260   3     S
+Li0    Li0     2.260   3_645 S
+H2     O4      0.954   5_546 S
+O4     H2      0.954   5_556 S
+O4     Li0     1.848   1_455 S
+O4     Li0     1.848   3     S
+O4     Li0     1.848   3_545 S
