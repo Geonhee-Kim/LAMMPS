@@ -1,1 +1,2 @@
-# LAMMPS
+# GH_LAMMPS script
+
