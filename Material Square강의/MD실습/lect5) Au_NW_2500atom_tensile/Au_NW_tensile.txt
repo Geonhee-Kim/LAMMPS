@@ -1,0 +1,18 @@
+Au_NW_tensile	
+
+crystal 설정
+system FCC100
+lattice constant 4.08
+atom Au
+supercell 25x5x5 (사각형 wire형성)
+vaccum layer 0 0 -10 10 -10 10
+
+LAMMPS 설정
+tensile test
+supercell 1x1x1
+ensemble NVT
+temperature 300K
+strain rate 0.001%/ps
+time 500ps
+timestep 0.5fs
+core 8

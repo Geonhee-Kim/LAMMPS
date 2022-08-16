@@ -1,0 +1,126 @@
+# MatSQ - MD : Melt and quench
+# Minimization --> Quenching Processs --> NEMD for thermal conductivity
+#            rlx -->> nve1 -->> npt1(300-300)
+#                     nve2 -->> npt2(300-2000)
+#                     nve3
+# Written by MK (Virtual Lab)
+# 2020. 03. 23.
+# Variables for Melt and quench
+# Update log
+# Add RDF and dump style has changed
+# 2020. 06. 08.
+# Modify dump style - schan
+# 2020. 06. 08.
+variable               N           equal     count(all)
+variable               P           equal     1.01325
+variable               T1          equal     1500     # quenching init temperature
+variable               T2          equal     300    # quenching end temperature
+variable               Qrate       equal     1      # K/ps
+variable               Tdamp       equal     v_dt*100  # recommended value in official site
+variable               Pdamp       equal     v_dt*1000 # recommended value in official site
+variable               dt          equal     0.0005    # ps [1.e-12s] default 0.0005
+variable               run_nve1    equal     50000
+variable               run_npt1    equal     50000
+variable               run_nve2    equal     50000
+variable               run_npt2    equal     abs(floor((v_T2-v_T1)/v_Qrate/v_dt))
+variable               run_nve3    equal     50000
+variable               run_npt3    equal     abs(floor((v_T2-v_T1)/v_Qrate/v_dt))
+variable               run_nve4    equal     50000
+variable               rndn        equal     135753
+variable               nbin        equal     200
+# System
+units                  metal
+atom_style             atomic
+dimension              3
+boundary               p p p
+# Read data from structure file / restart
+read_data             structure.matsq.lammps
+#mass                  1 12.0107
+# Define potential (FF)
+pair_style      eam/alloy
+pair_coeff      * * ffields/EAM-ALLOY/Au_Mpt.eam.alloy Au
+# Relaxation
+neighbor               2.0 bin
+neigh_modify           every 10  delay 0 check yes
+fix                    br all box/relax iso 0.0 vmax 0.001
+min_style              cg
+minimize               1.00e-30 1.00e-30 100000 1000000
+unfix                  br
+reset_timestep         0
+# NVE 1
+timestep               ${dt}
+thermo_style           custom step temp etotal pe ke enthalpy press lx ly lz vol density
+thermo                 1000
+fix                    nve1 all nve
+variable               Temp   equal  temp
+variable               ETOT   equal  etotal/v_N
+variable               KE     equal  ke/v_N
+variable               PE     equal  pe/v_N
+variable               Pr     equal  press
+#fix                    ave_nve1 all ave/time 100 10 1000 v_Temp v_ETOT v_PE v_KE v_Pr ave window 2 file temp_nve1.out
+#write_data             data.polymer
+run                    ${run_nve1}
+unfix                  nve1
+write_restart          restart.nve1
+reset_timestep         0
+# NPT 1
+compute                myRDF all rdf ${nbin}   # compute [ID] [group-ID] rdf [Nbin] ...
+timestep               ${dt}
+thermo_style           custom step temp etotal pe ke enthalpy press vol lx ly lz density
+velocity               all create ${T1} ${rndn} dist gaussian
+thermo                 1000
+fix                    rdf    all ave/time 100 1 1000 c_myRDF[1] c_myRDF[2] file vlab/rdf.dat mode vector
+#fix                    npt1 all npt temp ${T1} ${T1} ${Tdamp} iso ${P} ${P} ${Pdamp}
+fix                    npt1 all nvt temp ${T1} ${T1} ${Tdamp} 
+variable               Temp   equal  temp
+variable               ETOT   equal  etotal/v_N
+variable               KE     equal  ke/v_N
+variable               PE     equal  pe/v_N
+variable               Pr     equal  press
+dump                   dmp_npt all custom 1000 vlab/movie.dat id element xs ys zs
+dump_modify            dmp_npt element Au
+fix                    ave_npt1 all ave/time 100 10 1000 v_Temp v_ETOT v_PE v_KE v_Pr ave window 2 file temp.out
+run                    ${run_npt1}
+unfix                  npt1
+write_restart          restart.npt1
+# NVE 2
+timestep               ${dt}
+thermo_style           custom step temp etotal pe ke enthalpy press lx ly lz vol  density
+thermo                 1000
+fix                    nve2 all nve
+variable               Temp   equal  temp
+variable               ETOT   equal  etotal/v_N
+variable               KE     equal  ke/v_N
+variable               PE     equal  pe/v_N
+variable               Pr     equal  press
+run                    ${run_nve2}
+unfix                  nve2
+write_restart          restart.nve2
+# NPT 2
+timestep               ${dt}
+thermo_style           custom step temp etotal pe ke enthalpy press vol lx ly lz density
+thermo                 1000
+#fix                    npt2 all npt temp ${T1} ${T2} ${Tdamp} iso ${P} ${P} ${Pdamp}
+fix                    npt2 all nvt temp ${T1} ${T2} ${Tdamp} 
+variable               Temp   equal  temp
+variable               ETOT   equal  etotal/v_N
+variable               KE     equal  ke/v_N
+variable               PE     equal  pe/v_N
+variable               Pr     equal  press
+run                    ${run_npt2}
+unfix                  npt2
+write_restart          restart.npt2
+# NVE 3
+timestep               ${dt}
+thermo_style           custom step temp etotal pe ke enthalpy press lx ly lz vol density
+thermo                 1000
+fix                    nve3 all nve
+variable               Temp   equal  temp
+variable               ETOT   equal  etotal/v_N
+variable               KE     equal  ke/v_N
+variable               PE     equal  pe/v_N
+variable               Pr     equal  press
+run                    ${run_nve3}
+unfix                  nve3
+write_restart          restart.nve3
+

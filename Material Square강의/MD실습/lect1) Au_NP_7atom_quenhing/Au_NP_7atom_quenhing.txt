@@ -1,0 +1,19 @@
+Au_NP_7atom_quenhing
+
+crystal 설정
+system simple cubic
+lattice constant 2.0??
+atom Au
+supercell 2x2x2
+
+
+LAMMPS설정
+supercell 1 1 1 7atom
+ensemble NVT
+start temp 1000K
+final temp 10K
+Quenching rate 1K/ps
+core 4
+pressure(bar) 1.0132
+number of bin 200
+time step (ps) 0.0005

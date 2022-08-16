@@ -1,0 +1,76 @@
+# MatSQ - MD : Tensile test calculation to get Stress-Strain curve
+# # Written by M. Park (Virtual Lab)
+# # 2020. 05. 29.
+
+# Define system
+units 		metal
+dimension	3
+boundary	p p p
+atom_style	%atomStyle%
+
+# Read data and define FF
+variable        dt    equal %timestep%
+variable        Tdamp equal v_dt*100
+variable        Pdamp equal v_dt*1000
+variable        Temp  equal %temperature%
+
+read_data      structure.matsq.lammps
+
+pair_style	%pairStyle%
+pair_coeff	%pairCoeff%	
+
+# Equilibration
+reset_timestep	0
+timestep        ${dt}
+velocity        all create ${Temp} 12345 mom yes rot no
+fix             1 all npt temp ${Temp} ${Temp} ${Tdamp} iso 0 0 ${Pdamp} drag 1 
+thermo          1000
+thermo_style    custom step lx ly lz press pxx pyy pzz pe temp
+run             20000 # Run for at least 10 picosecond (assuming 1 fs timestep)
+unfix           1
+
+# Deformation simualtion begin
+reset_timestep	0
+#variable        srate  equal 1.0e10             # strain rate : 1.e10 s-1
+#variable        srate1 equal "v_srate / 1.0e12" # convert, ps -> s
+
+## X-direction
+%x%variable        tmp equal "lx"   # x-direction
+%x%variable        L0 equal ${tmp}
+%x%fix		1 all npt temp ${Temp} ${Temp} ${Tdamp} y 0 0 ${Pdamp} z 0 0 ${Pdamp} drag 1
+%x%%su1%fix		fdeform all deform 1 x erate %strainRate% units box remap x  # erate [s-1]
+%x%%su2%fix             fdeform all deform 1 x vel %strainRate% units box remap x         # velocity [A/ps]
+%x%variable        strain equal "(lx - v_L0)/v_L0"
+
+## Y-direction
+%y%variable        tmp equal "ly"   # y-direction
+%y%variable        L0 equal ${tmp}
+%y%fix		1 all npt temp ${Temp} ${Temp} ${Tdamp} x 0 0 ${Pdamp} z 0 0 ${Pdamp} drag 1
+%y%%su1%fix		fdeform all deform 1 y erate %strainRate% units box remap x  # erate [s-1]
+%y%%su2%fix            fdeform all deform 1 y vel %strainRate% units box remap x        # velocity [A/ps]
+%y%variable        strain equal "(ly - v_L0)/v_L0"
+
+## Z-direction
+%z%variable        tmp equal "lz"   # z-direction
+%z%variable        L0 equal ${tmp}
+%z%fix		1 all npt temp ${Temp} ${Temp} ${Tdamp} x 0 0 ${Pdamp} y 0 0 ${Pdamp} drag 1
+%z%%su1%fix		fdeform all deform 1 z erate %strainRate% units box remap x  # erate [s-1]
+%z%%su2%fix            fdeform all deform 1 z vel %strainRate% units box remap x        # velocity [A/ps]
+%z%variable        strain equal "(lz - v_L0)/v_L0"
+
+# p2, p3, p4 [GPa]
+variable        p1 equal "v_strain"
+variable        p2 equal "-pxx/10000"
+variable        p3 equal "-pyy/10000"
+variable        p4 equal "-pzz/10000"
+fix             def1 all print 100 "${p1} ${p2} ${p3} ${p4}" file ss_calculation.txt screen no
+
+# Dump trajectories
+#dump            dmp_ss all custom 1000 *.dat id type xu yu zu vx vy vz element
+dump            dmp_ss all custom 1000 *.dat id type xs ys zs vx vy vz element
+dump_modify     dmp_ss element %elListIso%
+thermo 	        1000 
+thermo_style	custom step v_strain temp v_p2 v_p3 v_p4 ke pe press
+
+run		%run%
+

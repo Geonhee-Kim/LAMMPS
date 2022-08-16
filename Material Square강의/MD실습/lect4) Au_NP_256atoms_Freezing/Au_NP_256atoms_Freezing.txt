@@ -1,0 +1,19 @@
+Au_NP_256atoms_Freezing	
+
+crystal 설정
+system FCC100
+lattice constant 4.08
+atom Au
+supercell 4x4x4
+
+LAMMPS 설정
+melt&quenching
+supercell 1x1x1
+ensemble NVT
+start temperature 1500K
+final temperature 300K
+quenching rate 1K/ps
+pressure (bar) 1.01325
+number of bin 200
+timestep 0.0005
+core 8
